@@ -8,13 +8,27 @@
 -- PARTE 1: ESQUEMA (MIGRACIÓN)
 -- ============================================================
 
--- ENUMS
-CREATE TYPE user_role AS ENUM ('patient', 'admin');
-CREATE TYPE appointment_status AS ENUM ('pendiente', 'confirmada', 'cancelada', 'completada');
-CREATE TYPE appointment_type AS ENUM ('primera_consulta', 'seguimiento', 'express');
-CREATE TYPE blog_status AS ENUM ('borrador', 'publicado');
-CREATE TYPE plan_status AS ENUM ('activo', 'inactivo', 'completado');
-CREATE TYPE activity_level AS ENUM ('sedentario', 'ligero', 'moderado', 'activo', 'muy_activo');
+-- ENUMS (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+    CREATE TYPE user_role AS ENUM ('patient', 'admin');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'appointment_status') THEN
+    CREATE TYPE appointment_status AS ENUM ('pendiente', 'confirmada', 'cancelada', 'completada');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'appointment_type') THEN
+    CREATE TYPE appointment_type AS ENUM ('primera_consulta', 'seguimiento', 'express');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'blog_status') THEN
+    CREATE TYPE blog_status AS ENUM ('borrador', 'publicado');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'plan_status') THEN
+    CREATE TYPE plan_status AS ENUM ('activo', 'inactivo', 'completado');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'activity_level') THEN
+    CREATE TYPE activity_level AS ENUM ('sedentario', 'ligero', 'moderado', 'activo', 'muy_activo');
+  END IF;
+END $$;
 
 -- FUNCTION: updated_at trigger
 CREATE OR REPLACE FUNCTION trigger_set_updated_at()
@@ -26,7 +40,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- PROFILES
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
   id                 UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   role               user_role NOT NULL DEFAULT 'patient',
   name               TEXT NOT NULL,
@@ -62,7 +76,7 @@ CREATE POLICY "profiles_self_update" ON profiles FOR UPDATE USING (auth.uid() = 
 CREATE POLICY "profiles_admin_insert" ON profiles FOR INSERT WITH CHECK (auth.uid() = id OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- BLOG POSTS
-CREATE TABLE blog_posts (
+CREATE TABLE IF NOT EXISTS blog_posts (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   author_id   UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   title       TEXT NOT NULL,
@@ -91,7 +105,7 @@ CREATE POLICY "blog_posts_public_select" ON blog_posts FOR SELECT USING (status 
 CREATE POLICY "blog_posts_admin_all" ON blog_posts FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- APPOINTMENTS
-CREATE TABLE appointments (
+CREATE TABLE IF NOT EXISTS appointments (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id       UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   appointment_date DATE NOT NULL,
@@ -120,7 +134,7 @@ CREATE POLICY "appointments_patient_insert" ON appointments FOR INSERT WITH CHEC
 CREATE POLICY "appointments_patient_cancel" ON appointments FOR UPDATE USING (patient_id = auth.uid() AND status = 'pendiente') WITH CHECK (patient_id = auth.uid() AND status = 'cancelada');
 
 -- NUTRITION PLANS
-CREATE TABLE nutrition_plans (
+CREATE TABLE IF NOT EXISTS nutrition_plans (
   id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id           UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   name                 TEXT NOT NULL,
@@ -145,7 +159,7 @@ CREATE POLICY "nutrition_plans_patient_select" ON nutrition_plans FOR SELECT USI
 CREATE POLICY "nutrition_plans_admin_all" ON nutrition_plans FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- NUTRITION WEEKS
-CREATE TABLE nutrition_weeks (
+CREATE TABLE IF NOT EXISTS nutrition_weeks (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   plan_id     UUID NOT NULL REFERENCES nutrition_plans(id) ON DELETE CASCADE,
   week_number INT NOT NULL CHECK (week_number >= 1),
@@ -158,7 +172,7 @@ CREATE POLICY "nutrition_weeks_read" ON nutrition_weeks FOR SELECT USING (EXISTS
 CREATE POLICY "nutrition_weeks_admin_all" ON nutrition_weeks FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- NUTRITION DAYS
-CREATE TABLE nutrition_days (
+CREATE TABLE IF NOT EXISTS nutrition_days (
   id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   week_id  UUID NOT NULL REFERENCES nutrition_weeks(id) ON DELETE CASCADE,
   day_name TEXT NOT NULL CHECK (day_name IN ('Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo')),
@@ -171,7 +185,7 @@ CREATE POLICY "nutrition_days_read" ON nutrition_days FOR SELECT USING (EXISTS (
 CREATE POLICY "nutrition_days_admin_all" ON nutrition_days FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- NUTRITION MEALS
-CREATE TABLE nutrition_meals (
+CREATE TABLE IF NOT EXISTS nutrition_meals (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   day_id      UUID NOT NULL REFERENCES nutrition_days(id) ON DELETE CASCADE,
   meal_time   TEXT NOT NULL,
@@ -191,7 +205,7 @@ CREATE POLICY "nutrition_meals_read" ON nutrition_meals FOR SELECT USING (EXISTS
 CREATE POLICY "nutrition_meals_admin_all" ON nutrition_meals FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- MEAL COMPLETIONS
-CREATE TABLE meal_completions (
+CREATE TABLE IF NOT EXISTS meal_completions (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   meal_id      UUID NOT NULL REFERENCES nutrition_meals(id) ON DELETE CASCADE,
   patient_id   UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -204,7 +218,7 @@ ALTER TABLE meal_completions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "meal_completions_self" ON meal_completions FOR ALL USING (patient_id = auth.uid()) WITH CHECK (patient_id = auth.uid());
 
 -- WEIGHT LOGS
-CREATE TABLE weight_logs (
+CREATE TABLE IF NOT EXISTS weight_logs (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   weight_kg  NUMERIC(5,1) NOT NULL,
@@ -222,7 +236,7 @@ CREATE POLICY "weight_logs_patient_insert" ON weight_logs FOR INSERT WITH CHECK 
 CREATE POLICY "weight_logs_admin_all" ON weight_logs FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- ACTIVITY LOGS
-CREATE TABLE activity_logs (
+CREATE TABLE IF NOT EXISTS activity_logs (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id    UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   activity_type TEXT NOT NULL,
@@ -241,7 +255,7 @@ CREATE POLICY "activity_logs_patient_all" ON activity_logs FOR ALL USING (patien
 CREATE POLICY "activity_logs_admin_all" ON activity_logs FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- TESTIMONIALS
-CREATE TABLE testimonials (
+CREATE TABLE IF NOT EXISTS testimonials (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
   name       TEXT NOT NULL,
@@ -301,7 +315,8 @@ INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, raw_a
     '{"role":"patient","name":"Laura Martínez"}',
     now(),
     now()
-  );
+  )
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- PARTE 3: DATOS DE DEMOSTRACIÓN
@@ -311,13 +326,15 @@ INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, raw_a
 INSERT INTO blog_posts (id, author_id, title, slug, category, excerpt, content, image_url, read_time, status) VALUES
   ('b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', '5 Superalimentos para Aumentar tu Energía', 'superalimentos-energia', 'Nutrición', 'Descubre los alimentos que te ayudarán a mantenerte activo y lleno de energía durante todo el día...', '<h2>¿Qué son los superalimentos?</h2><p>Los superalimentos son alimentos naturales que concentran una cantidad excepcional de nutrientes.</p>', '/images/blog-article-1.jpg', '5 min', 'publicado'),
   ('b0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'La Importancia de la Hidratación Diaria', 'hidratacion-diaria', 'Hábitos Saludables', 'El agua es esencial para casi todas las funciones de nuestro cuerpo.', '<h2>¿Por qué es importante la hidratación?</h2><p>El agua constituye aproximadamente el 60% de nuestro cuerpo.</p>', '/images/blog-article-2.jpg', '4 min', 'publicado'),
-  ('b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'Meal Prep: Organiza tus Comidas Semanales', 'meal-prep-semanal', 'Meal Prep', 'La planificación de comidas es clave para mantener una alimentación saludable.', '<h2>¿Qué es el Meal Prep?</h2><p>El meal prep consiste en dedicar tiempo a preparar las comidas de la semana.</p>', '/images/blog-article-3.jpg', '6 min', 'publicado');
+  ('b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'Meal Prep: Organiza tus Comidas Semanales', 'meal-prep-semanal', 'Meal Prep', 'La planificación de comidas es clave para mantener una alimentación saludable.', '<h2>¿Qué es el Meal Prep?</h2><p>El meal prep consiste en dedicar tiempo a preparar las comidas de la semana.</p>', '/images/blog-article-3.jpg', '6 min', 'publicado')
+ON CONFLICT (id) DO NOTHING;
 
 -- TESTIMONIALS
 INSERT INTO testimonials (id, patient_id, name, text, image_url, rating, visible) VALUES
   ('t0000000-0000-0000-0000-000000000001', NULL, 'Laura Martínez', 'María cambió completamente mi relación con la comida. Perdí 12 kilos en 6 meses de forma saludable.', '/images/testimonial-1.jpg', 5, true),
   ('t0000000-0000-0000-0000-000000000002', NULL, 'Carlos Rodríguez', 'Llevaba años luchando con mi peso y nada funcionaba. El plan de María fue el primero que realmente se adaptó a mi vida.', '/images/testimonial-2.jpg', 5, true),
-  ('t0000000-0000-0000-0000-000000000003', NULL, 'Ana Fernández', 'Como persona con intolerancias alimentarias, encontrar una nutricionista que entienda fue un alivio.', '/images/testimonial-3.jpg', 5, true);
+  ('t0000000-0000-0000-0000-000000000003', NULL, 'Ana Fernández', 'Como persona con intolerancias alimentarias, encontrar una nutricionista que entienda fue un alivio.', '/images/testimonial-3.jpg', 5, true)
+ON CONFLICT (id) DO NOTHING;
 
 -- WEIGHT LOGS (for patient)
 INSERT INTO weight_logs (patient_id, weight_kg, logged_at) VALUES
@@ -328,7 +345,8 @@ INSERT INTO weight_logs (patient_id, weight_kg, logged_at) VALUES
   ('a0000000-0000-0000-0000-000000000002', 72.5, '2025-02-03'),
   ('a0000000-0000-0000-0000-000000000002', 71.9, '2025-02-10'),
   ('a0000000-0000-0000-0000-000000000002', 71.4, '2025-02-17'),
-  ('a0000000-0000-0000-0000-000000000002', 70.8, '2025-02-24');
+  ('a0000000-0000-0000-0000-000000000002', 70.8, '2025-02-24')
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- ¡LISTO! Ahora podés iniciar sesión con:
