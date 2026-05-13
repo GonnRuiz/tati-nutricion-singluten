@@ -71,9 +71,13 @@ CREATE TRIGGER trg_profiles_updated_at
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "profiles_self_select" ON profiles;
 CREATE POLICY "profiles_self_select" ON profiles FOR SELECT USING (auth.uid() = id);
+DROP POLICY IF EXISTS "profiles_admin_select" ON profiles;
 CREATE POLICY "profiles_admin_select" ON profiles FOR SELECT USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+DROP POLICY IF EXISTS "profiles_self_update" ON profiles;
 CREATE POLICY "profiles_self_update" ON profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+DROP POLICY IF EXISTS "profiles_admin_insert" ON profiles;
 CREATE POLICY "profiles_admin_insert" ON profiles FOR INSERT WITH CHECK (auth.uid() = id OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- BLOG POSTS
@@ -92,9 +96,9 @@ CREATE TABLE IF NOT EXISTS blog_posts (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_blog_posts_slug ON blog_posts(slug);
-CREATE INDEX idx_blog_posts_status ON blog_posts(status);
-CREATE INDEX idx_blog_posts_category ON blog_posts(category);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_category ON blog_posts(category);
 
 DROP TRIGGER IF EXISTS trg_blog_posts_updated_at ON blog_posts;
 CREATE TRIGGER trg_blog_posts_updated_at
@@ -103,7 +107,9 @@ CREATE TRIGGER trg_blog_posts_updated_at
 
 ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "blog_posts_public_select" ON blog_posts;
 CREATE POLICY "blog_posts_public_select" ON blog_posts FOR SELECT USING (status = 'publicado');
+DROP POLICY IF EXISTS "blog_posts_admin_all" ON blog_posts;
 CREATE POLICY "blog_posts_admin_all" ON blog_posts FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- APPOINTMENTS
@@ -120,9 +126,9 @@ CREATE TABLE IF NOT EXISTS appointments (
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_appointments_patient ON appointments(patient_id);
-CREATE INDEX idx_appointments_date ON appointments(appointment_date);
-CREATE INDEX idx_appointments_status ON appointments(status);
+CREATE INDEX IF NOT EXISTS idx_appointments_patient ON appointments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(appointment_date);
+CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments(status);
 
 DROP TRIGGER IF EXISTS trg_appointments_updated_at ON appointments;
 CREATE TRIGGER trg_appointments_updated_at
@@ -131,9 +137,13 @@ CREATE TRIGGER trg_appointments_updated_at
 
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "appointments_patient_select" ON appointments;
 CREATE POLICY "appointments_patient_select" ON appointments FOR SELECT USING (patient_id = auth.uid());
+DROP POLICY IF EXISTS "appointments_admin_all" ON appointments;
 CREATE POLICY "appointments_admin_all" ON appointments FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+DROP POLICY IF EXISTS "appointments_patient_insert" ON appointments;
 CREATE POLICY "appointments_patient_insert" ON appointments FOR INSERT WITH CHECK (patient_id = auth.uid());
+DROP POLICY IF EXISTS "appointments_patient_cancel" ON appointments;
 CREATE POLICY "appointments_patient_cancel" ON appointments FOR UPDATE USING (patient_id = auth.uid() AND status = 'pendiente') WITH CHECK (patient_id = auth.uid() AND status = 'cancelada');
 
 -- NUTRITION PLANS
@@ -150,7 +160,7 @@ CREATE TABLE IF NOT EXISTS nutrition_plans (
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_nutrition_plans_patient ON nutrition_plans(patient_id);
+CREATE INDEX IF NOT EXISTS idx_nutrition_plans_patient ON nutrition_plans(patient_id);
 
 DROP TRIGGER IF EXISTS trg_nutrition_plans_updated_at ON nutrition_plans;
 CREATE TRIGGER trg_nutrition_plans_updated_at
@@ -159,7 +169,9 @@ CREATE TRIGGER trg_nutrition_plans_updated_at
 
 ALTER TABLE nutrition_plans ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "nutrition_plans_patient_select" ON nutrition_plans;
 CREATE POLICY "nutrition_plans_patient_select" ON nutrition_plans FOR SELECT USING (patient_id = auth.uid());
+DROP POLICY IF EXISTS "nutrition_plans_admin_all" ON nutrition_plans;
 CREATE POLICY "nutrition_plans_admin_all" ON nutrition_plans FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- NUTRITION WEEKS
@@ -172,7 +184,9 @@ CREATE TABLE IF NOT EXISTS nutrition_weeks (
 
 ALTER TABLE nutrition_weeks ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "nutrition_weeks_read" ON nutrition_weeks;
 CREATE POLICY "nutrition_weeks_read" ON nutrition_weeks FOR SELECT USING (EXISTS (SELECT 1 FROM nutrition_plans WHERE id = plan_id AND patient_id = auth.uid()) OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+DROP POLICY IF EXISTS "nutrition_weeks_admin_all" ON nutrition_weeks;
 CREATE POLICY "nutrition_weeks_admin_all" ON nutrition_weeks FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- NUTRITION DAYS
@@ -185,7 +199,9 @@ CREATE TABLE IF NOT EXISTS nutrition_days (
 
 ALTER TABLE nutrition_days ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "nutrition_days_read" ON nutrition_days;
 CREATE POLICY "nutrition_days_read" ON nutrition_days FOR SELECT USING (EXISTS (SELECT 1 FROM nutrition_weeks w JOIN nutrition_plans p ON p.id = w.plan_id WHERE w.id = week_id AND p.patient_id = auth.uid()) OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+DROP POLICY IF EXISTS "nutrition_days_admin_all" ON nutrition_days;
 CREATE POLICY "nutrition_days_admin_all" ON nutrition_days FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- NUTRITION MEALS
@@ -205,7 +221,9 @@ CREATE TABLE IF NOT EXISTS nutrition_meals (
 
 ALTER TABLE nutrition_meals ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "nutrition_meals_read" ON nutrition_meals;
 CREATE POLICY "nutrition_meals_read" ON nutrition_meals FOR SELECT USING (EXISTS (SELECT 1 FROM nutrition_days d JOIN nutrition_weeks w ON w.id = d.week_id JOIN nutrition_plans p ON p.id = w.plan_id WHERE d.id = day_id AND p.patient_id = auth.uid()) OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+DROP POLICY IF EXISTS "nutrition_meals_admin_all" ON nutrition_meals;
 CREATE POLICY "nutrition_meals_admin_all" ON nutrition_meals FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- MEAL COMPLETIONS
@@ -219,6 +237,7 @@ CREATE TABLE IF NOT EXISTS meal_completions (
 
 ALTER TABLE meal_completions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "meal_completions_self" ON meal_completions;
 CREATE POLICY "meal_completions_self" ON meal_completions FOR ALL USING (patient_id = auth.uid()) WITH CHECK (patient_id = auth.uid());
 
 -- WEIGHT LOGS
@@ -230,13 +249,16 @@ CREATE TABLE IF NOT EXISTS weight_logs (
   notes      TEXT
 );
 
-CREATE INDEX idx_weight_logs_patient ON weight_logs(patient_id);
-CREATE INDEX idx_weight_logs_date ON weight_logs(logged_at);
+CREATE INDEX IF NOT EXISTS idx_weight_logs_patient ON weight_logs(patient_id);
+CREATE INDEX IF NOT EXISTS idx_weight_logs_date ON weight_logs(logged_at);
 
 ALTER TABLE weight_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "weight_logs_patient_select" ON weight_logs;
 CREATE POLICY "weight_logs_patient_select" ON weight_logs FOR SELECT USING (patient_id = auth.uid());
+DROP POLICY IF EXISTS "weight_logs_patient_insert" ON weight_logs;
 CREATE POLICY "weight_logs_patient_insert" ON weight_logs FOR INSERT WITH CHECK (patient_id = auth.uid());
+DROP POLICY IF EXISTS "weight_logs_admin_all" ON weight_logs;
 CREATE POLICY "weight_logs_admin_all" ON weight_logs FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- ACTIVITY LOGS
@@ -250,12 +272,14 @@ CREATE TABLE IF NOT EXISTS activity_logs (
   logged_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_activity_logs_patient ON activity_logs(patient_id);
-CREATE INDEX idx_activity_logs_date ON activity_logs(logged_at);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_patient ON activity_logs(patient_id);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_date ON activity_logs(logged_at);
 
 ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "activity_logs_patient_all" ON activity_logs;
 CREATE POLICY "activity_logs_patient_all" ON activity_logs FOR ALL USING (patient_id = auth.uid()) WITH CHECK (patient_id = auth.uid());
+DROP POLICY IF EXISTS "activity_logs_admin_all" ON activity_logs;
 CREATE POLICY "activity_logs_admin_all" ON activity_logs FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- TESTIMONIALS
@@ -272,7 +296,9 @@ CREATE TABLE IF NOT EXISTS testimonials (
 
 ALTER TABLE testimonials ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "testimonials_public_select" ON testimonials;
 CREATE POLICY "testimonials_public_select" ON testimonials FOR SELECT USING (visible = true);
+DROP POLICY IF EXISTS "testimonials_admin_all" ON testimonials;
 CREATE POLICY "testimonials_admin_all" ON testimonials FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')) WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- TRIGGER: auto-create profile on signup
