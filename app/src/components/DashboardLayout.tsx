@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Leaf, LayoutDashboard, User, ClipboardList, Calendar, LogOut, Menu } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { img } from '@/lib/utils'
 
 const navLinks = [
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -54,7 +55,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <div className="p-6 border-b border-[rgba(74,124,89,0.08)]">
           <div className="flex items-center gap-3">
             <img
-              src={user?.avatar || '/images/avatar-default.jpg'}
+              src={user?.avatar ? img(user.avatar) : img('/images/avatar-default.jpg')}
               alt={user?.name}
               className="w-12 h-12 rounded-full object-cover"
             />

@@ -3,6 +3,7 @@ import { Save, Camera } from 'lucide-react';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { patientData } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
+import { img } from '@/lib/utils'
 
 export function DatosPage() {
   const { toast } = useToast();
@@ -44,7 +45,7 @@ export function DatosPage() {
             <div className="flex items-center gap-4 mb-8">
               <div className="relative">
                 <img
-                  src="/images/testimonial-1.jpg"
+                  src={img("/images/testimonial-1.jpg")}
                   alt="Avatar"
                   className="w-20 h-20 rounded-full object-cover"
                 />

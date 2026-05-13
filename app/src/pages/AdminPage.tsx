@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, Eye, Search, X, Save, FileText, Users, CalendarDays
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { blogPosts } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
+import { img } from '@/lib/utils'
 
 interface ArticleForm {
   id?: string;
@@ -113,7 +114,7 @@ export function AdminPage() {
           <h1 className="font-display font-semibold text-xl text-[#2D3436]">Panel de Administración</h1>
           <div className="flex items-center gap-3">
             <span className="text-sm text-[#636E72]">Dra. María González</span>
-            <img src="/images/about-portrait.jpg" alt="Admin" className="w-9 h-9 rounded-full object-cover" />
+            <img src={img("/images/about-portrait.jpg")} alt="Admin" className="w-9 h-9 rounded-full object-cover" />
           </div>
         </div>
       </header>
@@ -209,7 +210,7 @@ export function AdminPage() {
                   <tr key={article.id} className="border-b border-[rgba(74,124,89,0.05)] hover:bg-[rgba(74,124,89,0.02)] transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <img src={article.image} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                        <img src={img(article.image)} alt="" className="w-10 h-10 rounded-lg object-cover" />
                         <span className="font-medium text-sm text-[#2D3436]">{article.title}</span>
                       </div>
                     </td>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { img } from '@/lib/utils'
 
 export function RegisterPage() {
   const [form, setForm] = useState({
@@ -52,7 +53,7 @@ export function RegisterPage() {
       {/* Left side - Image */}
       <div className="hidden lg:flex lg:w-1/2 relative">
         <img
-          src="/images/about-portrait.jpg"
+          src={img("/images/about-portrait.jpg")}
           alt="Nutricionista"
           className="absolute inset-0 w-full h-full object-cover"
         />

@@ -2,6 +2,7 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Calendar } from 'lucide-react';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { blogPosts } from '@/data/mockData';
+import { img } from '@/lib/utils'
 
 export function ArticlePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -57,7 +58,7 @@ export function ArticlePage() {
 
         <ScrollReveal>
           <img
-            src={post.image}
+            src={img(post.image)}
             alt={post.title}
             className="w-full rounded-2xl mb-8"
           />
@@ -85,7 +86,7 @@ export function ArticlePage() {
                     className="flex gap-4 p-4 bg-white rounded-xl hover:shadow-card transition-all duration-300 group"
                   >
                     <img
-                      src={rp.image}
+                      src={img(rp.image)}
                       alt={rp.title}
                       className="w-20 h-20 rounded-lg object-cover shrink-0"
                     />

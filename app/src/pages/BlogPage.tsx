@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Search, ArrowRight } from 'lucide-react';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { blogPosts, categories } from '@/data/mockData';
+import { img } from '@/lib/utils'
 
 export function BlogPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,7 +90,7 @@ export function BlogPage() {
                 <div className="bg-white rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300">
                   <div className="overflow-hidden">
                     <img
-                      src={post.image}
+                      src={img(post.image)}
                       alt={post.title}
                       className="w-full aspect-[16/9] object-cover group-hover:scale-105 transition-transform duration-500"
                     />

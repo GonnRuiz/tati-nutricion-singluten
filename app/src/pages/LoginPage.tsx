@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { img } from '@/lib/utils'
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -46,7 +47,7 @@ export function LoginPage() {
       {/* Left side - Image */}
       <div className="hidden lg:flex lg:w-1/2 relative">
         <img
-          src="/images/hero-main.jpg"
+          src={img("/images/hero-main.jpg")}
           alt="Nutricionista"
           className="absolute inset-0 w-full h-full object-cover"
         />

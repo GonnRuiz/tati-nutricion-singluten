@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Calendar, ArrowRight, Video, ClipboardList, TrendingUp, ChevronLeft, ChevronRight, Star, BookOpen, Mail, Phone } from 'lucide-react';
 import { ScrollReveal } from '@/components/ScrollReveal';
 import { blogPosts, testimonials } from '@/data/mockData';
+import { img } from '@/lib/utils'
 
 /* ─────────── HERO ─────────── */
 function HeroSection() {
@@ -70,7 +71,7 @@ function HeroSection() {
           <ScrollReveal delay={200} direction="scale">
             <div className="animate-float">
               <img
-                src="/images/hero-main.jpg"
+                src={img("/images/hero-main.jpg")}
                 alt="Nutricionista profesional"
                 className="w-full rounded-[20px] shadow-[0_20px_60px_rgba(74,124,89,0.15)]"
               />
@@ -129,7 +130,7 @@ function ServicesSection() {
               <div className="bg-white border border-[rgba(74,124,89,0.08)] rounded-2xl p-8 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
                 <service.icon className="w-12 h-12 text-nutri-primary mb-4" strokeWidth={1.5} />
                 <img
-                  src={service.image}
+                  src={img(service.image)}
                   alt={service.title}
                   className="w-full h-48 object-cover rounded-xl mb-5"
                 />
@@ -157,7 +158,7 @@ function AboutSection() {
             <div className="relative">
               <div className="absolute -top-6 -left-6 w-[200px] h-[200px] rounded-full bg-nutri-accent-leaf -z-10" />
               <img
-                src="/images/about-portrait.jpg"
+                src={img("/images/about-portrait.jpg")}
                 alt="Dra. María González"
                 className="w-full max-w-[500px] rounded-[20px] shadow-[0_16px_48px_rgba(74,124,89,0.12)]"
               />
@@ -301,7 +302,7 @@ function TestimonialsSection() {
                     <div className="text-nutri-accent-leaf text-4xl mb-4">"</div>
                     <p className="text-[#2D3436] text-lg leading-relaxed mb-6">{t.text}</p>
                     <div className="flex items-center gap-4 pt-4 border-t border-[rgba(74,124,89,0.1)]">
-                      <img src={t.image} alt={t.name} className="w-12 h-12 rounded-full object-cover" />
+                      <img src={img(t.image)} alt={t.name} className="w-12 h-12 rounded-full object-cover" />
                       <div>
                         <div className="font-semibold text-[#2D3436]">{t.name}</div>
                         <div className="flex gap-0.5">
@@ -373,7 +374,7 @@ function BlogPreviewSection() {
                 <div className="bg-white rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300">
                   <div className="overflow-hidden">
                     <img
-                      src={post.image}
+                      src={img(post.image)}
                       alt={post.title}
                       className="w-full aspect-[16/9] object-cover group-hover:scale-105 transition-transform duration-500"
                     />
