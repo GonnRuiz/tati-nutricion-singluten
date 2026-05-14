@@ -2,7 +2,7 @@
 
 Portal de paciente para consultas nutricionales con la Lic. Tatiana Castel. Especializado en alimentación **libre de gluten** y **antiinflamatoria**.
 
-**Sitio en vivo:** https://gonnruiz.github.io/portal-nutricion-tati/
+**Sitio en vivo:** https://gonnruiz.github.io/tati-nutricion-singluten/
 
 ## Stack
 

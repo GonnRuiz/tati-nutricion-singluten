@@ -5,7 +5,7 @@ import { inspectAttr } from 'kimi-plugin-inspect-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/portal-nutricion-tati/',
+  base: '/tati-nutricion-singluten/',
   plugins: [inspectAttr(), react()],
   server: {
     port: 3000,
