@@ -81,7 +81,7 @@ export function AdminPage() {
   };
 
   const saveAppointment = () => {
-    if (!appointmentForm.date || !appointmentForm.time) {
+    if (!editingAppointment || !appointmentForm.date || !appointmentForm.time) {
       toast({ title: 'Completá fecha y hora', variant: 'destructive' });
       return;
     }
