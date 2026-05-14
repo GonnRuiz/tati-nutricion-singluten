@@ -118,9 +118,48 @@ export function AdminPage() {
     content: '',
     status: 'Borrador',
   });
-
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [patientSubTab, setPatientSubTab] = useState<'info' | 'plan'>('info');
+  const [patients, setPatients] = useState<Patient[]>(mockPatients);
+  const [showPatientForm, setShowPatientForm] = useState(false);
+  const [patientForm, setPatientForm] = useState({
+    name: '', email: '', phone: '', age: 30, height: 165, weight: 70,
+    condition: '', plan: 'Sin Gluten',
+  });
+
+  const calcIMC = (w: number, h: number) => Math.round((w / ((h / 100) ** 2)) * 10) / 10;
+
+  const addPatient = () => {
+    const imc = calcIMC(patientForm.weight, patientForm.height);
+    const newPatient: Patient = {
+      id: Date.now().toString(),
+      name: patientForm.name,
+      email: patientForm.email,
+      phone: patientForm.phone,
+      age: patientForm.age,
+      height: patientForm.height,
+      weight: patientForm.weight,
+      imc,
+      condition: patientForm.condition,
+      lastVisit: new Date().toLocaleDateString('es-ES'),
+      plan: patientForm.plan,
+      status: 'activo',
+    };
+    setPatients([newPatient, ...patients]);
+    setShowPatientForm(false);
+    setPatientForm({ name: '', email: '', phone: '', age: 30, height: 165, weight: 70, condition: '', plan: 'Sin Gluten' });
+    toast({ title: 'Paciente agregado', description: `${newPatient.name} fue registrado correctamente.` });
+  };
+
+  const togglePatientStatus = (id: string) => {
+    setPatients(patients.map(p => p.id === id ? { ...p, status: p.status === 'activo' ? 'inactivo' : 'activo' } : p));
+    toast({ title: 'Estado actualizado' });
+  };
+
+  const deletePatient = (id: string) => {
+    setPatients(patients.filter(p => p.id !== id));
+    toast({ title: 'Paciente eliminado', description: 'El paciente fue eliminado del sistema.' });
+  };
 
   const filteredArticles = articles.filter((a) =>
     a.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -236,7 +275,7 @@ export function AdminPage() {
                 <Users className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-[#2D3436]">48</p>
+                <p className="text-2xl font-bold text-[#2D3436]">{patients.length}</p>
                 <p className="text-sm text-[#636E72]">Pacientes</p>
               </div>
             </div>
@@ -365,8 +404,12 @@ export function AdminPage() {
         {/* PATIENTS TAB */}
         {activeTab === 'pacientes' && (
         <div className="bg-white rounded-2xl shadow-card">
-          <div className="p-6 border-b border-[rgba(248,201,216,0.15)]">
-            <h2 className="font-semibold text-lg text-[#2D3436]">Mis Pacientes</h2>
+          <div className="p-6 border-b border-[rgba(248,201,216,0.15)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h2 className="font-semibold text-lg text-[#2D3436]">Mis Pacientes ({patients.length})</h2>
+            <button onClick={() => setShowPatientForm(true)}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white gradient-primary-btn rounded-xl hover:scale-[1.02] transition-all">
+              <Plus className="w-4 h-4" />Agregar Paciente
+            </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -378,11 +421,11 @@ export function AdminPage() {
                   <th className="text-left px-6 py-4 text-sm font-medium text-[#636E72]">IMC</th>
                   <th className="text-left px-6 py-4 text-sm font-medium text-[#636E72]">Plan</th>
                   <th className="text-left px-6 py-4 text-sm font-medium text-[#636E72]">Estado</th>
-                  <th className="text-left px-6 py-4 text-sm font-medium text-[#636E72]">Acción</th>
+                  <th className="text-left px-6 py-4 text-sm font-medium text-[#636E72]">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {mockPatients.map((p) => {
+                {patients.map((p) => {
                   const imcInfo = imcCategory(p.imc);
                   return (
                   <tr key={p.id} className="border-b border-[rgba(248,201,216,0.1)] hover:bg-[rgba(248,201,216,0.05)] transition-colors">
@@ -403,14 +446,22 @@ export function AdminPage() {
                       <span className="px-2 py-1 rounded-full bg-[rgba(185,243,229,0.3)] text-xs font-medium">{p.plan}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${p.status === 'activo' ? 'bg-[rgba(39,174,96,0.1)] text-green-600' : 'bg-[rgba(243,156,18,0.1)] text-amber-600'}`}>
+                      <button onClick={() => togglePatientStatus(p.id)}
+                        className={`px-2 py-1 rounded-full text-xs font-medium transition-all ${p.status === 'activo' ? 'bg-[rgba(39,174,96,0.1)] text-green-600 hover:bg-[rgba(243,156,18,0.1)] hover:text-amber-600' : 'bg-[rgba(243,156,18,0.1)] text-amber-600 hover:bg-[rgba(39,174,96,0.1)] hover:text-green-600'}`}>
                         {p.status === 'activo' ? 'Activo' : 'Inactivo'}
-                      </span>
+                      </button>
                     </td>
                     <td className="px-6 py-4">
-                      <button onClick={() => { setSelectedPatient(p); setPatientSubTab('info'); }} className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-nutri-primary bg-[rgba(248,201,216,0.2)] rounded-lg hover:bg-[rgba(248,201,216,0.4)] transition-all">
-                        <Eye className="w-3 h-3" />Ver ficha
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => { setSelectedPatient(p); setPatientSubTab('info'); }}
+                          className="p-2 rounded-lg text-[#636E72] hover:bg-[rgba(248,201,216,0.2)] hover:text-nutri-primary transition-all" title="Ver ficha">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => deletePatient(p.id)}
+                          className="p-2 rounded-lg text-[#636E72] hover:bg-red-50 hover:text-red-500 transition-all" title="Eliminar">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                   );
@@ -663,6 +714,79 @@ export function AdminPage() {
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Patient Modal */}
+      {showPatientForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-auto shadow-modal">
+            <div className="p-6 border-b border-[rgba(248,201,216,0.15)] flex items-center justify-between">
+              <h3 className="font-semibold text-lg text-[#2D3436]">Nuevo Paciente</h3>
+              <button onClick={() => setShowPatientForm(false)} className="p-2 rounded-lg hover:bg-[#F7F5F0] transition-colors">
+                <X className="w-5 h-5 text-[#636E72]" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-[#2D3436] mb-1.5">Nombre completo</label>
+                  <input type="text" value={patientForm.name} onChange={(e) => setPatientForm({ ...patientForm, name: e.target.value })}
+                    className="w-full px-4 py-3 border border-[#D5DBDB] rounded-xl text-[15px] focus:outline-none focus:border-nutri-primary focus:ring-2 focus:ring-[rgba(248,201,216,0.2)] transition-all" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#2D3436] mb-1.5">Email</label>
+                  <input type="email" value={patientForm.email} onChange={(e) => setPatientForm({ ...patientForm, email: e.target.value })}
+                    className="w-full px-4 py-3 border border-[#D5DBDB] rounded-xl text-[15px] focus:outline-none focus:border-nutri-primary focus:ring-2 focus:ring-[rgba(248,201,216,0.2)] transition-all" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#2D3436] mb-1.5">Teléfono</label>
+                  <input type="text" value={patientForm.phone} onChange={(e) => setPatientForm({ ...patientForm, phone: e.target.value })}
+                    className="w-full px-4 py-3 border border-[#D5DBDB] rounded-xl text-[15px] focus:outline-none focus:border-nutri-primary focus:ring-2 focus:ring-[rgba(248,201,216,0.2)] transition-all" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#2D3436] mb-1.5">Edad</label>
+                  <input type="number" value={patientForm.age} onChange={(e) => setPatientForm({ ...patientForm, age: +e.target.value })}
+                    className="w-full px-4 py-3 border border-[#D5DBDB] rounded-xl text-[15px] focus:outline-none focus:border-nutri-primary focus:ring-2 focus:ring-[rgba(248,201,216,0.2)] transition-all" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#2D3436] mb-1.5">Altura (cm)</label>
+                  <input type="number" value={patientForm.height} onChange={(e) => setPatientForm({ ...patientForm, height: +e.target.value })}
+                    className="w-full px-4 py-3 border border-[#D5DBDB] rounded-xl text-[15px] focus:outline-none focus:border-nutri-primary focus:ring-2 focus:ring-[rgba(248,201,216,0.2)] transition-all" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#2D3436] mb-1.5">Peso (kg)</label>
+                  <input type="number" value={patientForm.weight} onChange={(e) => setPatientForm({ ...patientForm, weight: +e.target.value })}
+                    className="w-full px-4 py-3 border border-[#D5DBDB] rounded-xl text-[15px] focus:outline-none focus:border-nutri-primary focus:ring-2 focus:ring-[rgba(248,201,216,0.2)] transition-all" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#2D3436] mb-1.5">Condición médica</label>
+                  <input type="text" value={patientForm.condition} onChange={(e) => setPatientForm({ ...patientForm, condition: e.target.value })}
+                    placeholder="Ej: Celiaquía, Diabetes..."
+                    className="w-full px-4 py-3 border border-[#D5DBDB] rounded-xl text-[15px] focus:outline-none focus:border-nutri-primary focus:ring-2 focus:ring-[rgba(248,201,216,0.2)] transition-all" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#2D3436] mb-1.5">Plan</label>
+                  <select value={patientForm.plan} onChange={(e) => setPatientForm({ ...patientForm, plan: e.target.value })}
+                    className="w-full px-4 py-3 border border-[#D5DBDB] rounded-xl text-[15px] focus:outline-none focus:border-nutri-primary focus:ring-2 focus:ring-[rgba(248,201,216,0.2)] transition-all">
+                    <option>Sin Gluten</option>
+                    <option>Antiinflamatorio</option>
+                    <option>Reducción + Sin Gluten</option>
+                    <option>Mantenimiento</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button onClick={() => setShowPatientForm(false)} className="px-5 py-2.5 text-sm font-medium text-[#636E72] border border-[#D5DBDB] rounded-xl hover:bg-[#F7F5F0] transition-all">
+                  Cancelar
+                </button>
+                <button onClick={addPatient} disabled={!patientForm.name}
+                  className="flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white gradient-primary-btn rounded-xl hover:scale-[1.02] transition-all disabled:opacity-50">
+                  <Plus className="w-4 h-4" />Agregar Paciente
+                </button>
+              </div>
             </div>
           </div>
         </div>
